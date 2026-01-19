@@ -1,31 +1,34 @@
 #include "FileSink.hpp"
 
-FileSink::FileSink(const std::string& filename) 
-    : file(filename, std::ios::app) 
+std::string FileSink::format(const LogMessage& msg) {
+            std::ostringstream oss;
+            oss << msg << '\n';
+            return oss.str();
+}
+
+
+FileSink::FileSink(const std::string& path)
+        : file(path.c_str(), O_WRONLY | O_APPEND | O_CREAT)
 {
 
 }
 
-/* Move constructor */
-FileSink::FileSink(FileSink&& other) noexcept
+/* move constructor */
+FileSink::FileSink(FileSink&& other)
     : file(std::move(other.file))
 {
     
 }
 
-/* Move assignment */
-FileSink& FileSink::operator=(FileSink&& other) noexcept{
-    if (this != &other){ /* protect from self assignmnet */           
-        if (file.is_open()){
-            file.close();
-        }
+/* move assignment op */
+FileSink& FileSink::operator=(FileSink&& other){
+    if (this != &other){ /* protect from passing self */           
         file = std::move(other.file);
     }
     return *this;
 }
 
 void FileSink::write(const LogMessage& msg){
-    if (file.is_open()) {
-        file << msg << std::endl;
-    }
+    auto text = format(msg);
+    file.write(text.data(), text.size());
 }

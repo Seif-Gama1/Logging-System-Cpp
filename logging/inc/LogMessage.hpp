@@ -12,7 +12,7 @@ class LogMessage {
         std::string severity;
         std::string payload;
     public:
-        LogMessage() = delete;
+        // LogMessage() = delete;
         LogMessage(std::string name,
                     std::string timeStamp,
                     std::string context,
