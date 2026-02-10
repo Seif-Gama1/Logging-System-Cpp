@@ -4,22 +4,30 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <mutex>
+#include "RingBuffer.hpp"
 
 class LogManager{
     private:
         std::vector <std::unique_ptr<ILogSink>>  sinks;
-        std::vector <LogMessage> buffer;
+        RingBuffer<LogMessage> buffer;
+        std::mutex writeMutex;
 
         void route(const LogMessage& msg);
     public:
-        LogManager() = default;
+        LogManager(
+            std::size_t bufferCapacity = 100
+        ): buffer(bufferCapacity)
+        {
+
+        }
 
         LogManager(const LogManager& other) = delete;
         LogManager(LogManager&& other) =  delete;
         LogManager& operator = (const LogManager& other) = delete;
         LogManager& operator = (LogManager&& other) = delete;
 
-        void addSink(std::unique_ptr<ILogSink> sink);
         void log(const LogMessage& source);
+        void addSink(std::unique_ptr<ILogSink> sink);
         void flush();
 };

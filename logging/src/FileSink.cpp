@@ -30,5 +30,8 @@ FileSink& FileSink::operator=(FileSink&& other){
 
 void FileSink::write(const LogMessage& msg){
     auto text = format(msg);
+    {
+        std::lock_guard<std::mutex> lock(writeMutex);
+    }
     file.write(text.data(), text.size());
 }

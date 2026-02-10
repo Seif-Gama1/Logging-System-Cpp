@@ -6,10 +6,12 @@
 #include <fstream>
 #include <fcntl.h>   // O_WRONLY, O_APPEND, O_CREAT, O_RDONLY, etc.
 #include <unistd.h>  // open, close, write, read
+#include <mutex>
 
 class FileSink final : public ILogSink{
     private:
         SafeFile file;
+        std::mutex writeMutex;
         std::string format(const LogMessage& msg);
         
         public:

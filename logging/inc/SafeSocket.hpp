@@ -26,4 +26,9 @@ public:
     ssize_t send(const void* buf, size_t len, int flags);
     ssize_t receive(void* buf, size_t len, int flags);
     bool is_open() const;
+    void bind(const sockaddr* addr, socklen_t len);
+    void listen(int backlog = SOMAXCONN);
+    SafeSocket accept();
+    int getFd();
+    void connect(const sockaddr* addr, socklen_t len);
 };
