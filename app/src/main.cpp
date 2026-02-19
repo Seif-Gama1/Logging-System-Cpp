@@ -5,122 +5,61 @@
 #include "LogFormatter.hpp"
 #include "Cpu_policy.hpp"
 #include "ThreadPool.hpp"
+#include "SomeIPTelemetrySrcImpl.hpp"
 
-/* sample code/Notes */
-// SeverityLvl sev = SeverityLvl::WARNING;
 
-/* uint8_t sev_val = static_cast<uint8_t>(sev); // OK, explicit cast
-// Cannot do: int x = sev;   // error, strongly typed */
-
-/* formatter:
-    std::optional<LogMessage> formatDataToLogMsg(const std::string& raw);
-    Sometimes, telemetry reading is valid → return LogMessage in the optional.
-    Sometimes, telemetry reading is invalid / missing → return std::nullopt.
-*/
-
-/* constexpr SeverityLvl checkSeverity(float val) {
-        if constexpr (Policy::context == TelemetrySrc::CPU)
-            return (val > Policy::CRITICAL) ? SeverityLvl::CRITICAL : SeverityLvl::INFO;
-        else
-            return SeverityLvl::INFO;
-    }
-*/
-
-// int main() {
-//     // --- Setup Logger ---
-//     LogManager logger;
-//     logger.addSink(std::make_unique<ConsoleSink>());
-//     logger.addSink(std::make_unique<FileSink>("app.log"));
-
-//     // --- Setup Telemetry Source ---
-//     FileTelemetrySrc telemetry("data.txt");  // your dummy telemetry file
-//     if (!telemetry.openSource()) {
-//         std::cerr << "Failed to open telemetry file!" << std::endl;
-//         return 1;
-//     }
-
-//     // --- Read telemetry and log ---
-//     std::string line;
-//     int counter = 1;
-//     while (telemetry.readSource(line)){
-//         // Use LogFormatter with CPU policy to generate LogMessage
-//         auto cpu_maybeMsg = LogFormatter<Cpu_policy>::formatDataToLogMsg(line);
-//         auto gpu_maybeMsg = LogFormatter<Gpu_policy>::formatDataToLogMsg(line);
-//         auto ram_maybeMsg = LogFormatter<Ram_policy>::formatDataToLogMsg(line);
-
-//         if (cpu_maybeMsg.has_value()) {
-//             logger.log(cpu_maybeMsg.value());
-//         } else {
-//             std::cout << "Failed to parse CPU telemetry line: " << line << std::endl;
-//         }
-//         if (gpu_maybeMsg.has_value()) {
-//             logger.log(gpu_maybeMsg.value());
-//         } else {
-//             std::cout << "Failed to parse GPU telemetry line: " << line << std::endl;
-//         }
-//         if (ram_maybeMsg.has_value()) {
-//             logger.log(ram_maybeMsg.value());
-//         } else {
-//             std::cout << "Failed to parse RAM telemetry line: " << line << std::endl;
-//         }
-//         counter++;
-//     }
-
-//     logger.flush();
-
-//     std::cout << "All telemetry data logged." << std::endl;
-//     return 0;
-// }
-
-int main() {
-    // --- Setup Logger ---
+int main(){
     LogManager logger;
     logger.addSink(std::make_unique<ConsoleSink>());
     logger.addSink(std::make_unique<FileSink>("app.log"));
 
-    // --- Setup Telemetry Source ---
-    FileTelemetrySrc telemetry("data.txt");  
-    if (!telemetry.openSource()) {
+    FileTelemetrySrc telemetry("data.txt");
+    if (!telemetry.openSource()){
         std::cerr << "Failed to open telemetry file!" << std::endl;
         return 1;
     }
 
-    // --- Setup Thread Pool ---
-    std::size_t numWorkers = 3; // one for CPU, GPU, RAM or more
+    auto& gpuClient = SomeIPTelemetrySourceImpl::getInstance();
+
+    std::size_t numWorkers = 3;
     ThreadPool pool(numWorkers);
 
+    gpuClient.setEventCallback([&logger, &pool](float gpuLoad) {
+        pool.submit([gpuLoad, &logger]() {
+            if (gpuLoad >= 0.0f) {
+                std::string gpuData = std::to_string(gpuLoad);
+                auto maybeMsg = LogFormatter<Gpu_policy>::formatDataToLogMsg(gpuData);
+                if (maybeMsg.has_value()){
+                    logger.log(maybeMsg.value());
+                    logger.flush();
+                }
+            }
+        });
+    });
     std::string line;
-    int counter = 0;
-
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     while (telemetry.readSource(line)) {
-        counter++;
 
-        // --- Submit CPU processing ---
+        // --- CPU processing ---
         pool.submit([line, &logger]() {
             auto maybeMsg = LogFormatter<Cpu_policy>::formatDataToLogMsg(line);
-            if (maybeMsg) logger.log(maybeMsg.value());
-            else std::cerr << "Failed to parse CPU telemetry: " << line << "\n";
+            if (maybeMsg)
+                logger.log(maybeMsg.value());
         });
 
-        // --- Submit GPU processing ---
-        pool.submit([line, &logger]() {
-            auto maybeMsg = LogFormatter<Gpu_policy>::formatDataToLogMsg(line);
-            if (maybeMsg) logger.log(maybeMsg.value());
-            else std::cerr << "Failed to parse GPU telemetry: " << line << "\n";
-        });
-
-        // --- Submit RAM processing ---
+        
         pool.submit([line, &logger]() {
             auto maybeMsg = LogFormatter<Ram_policy>::formatDataToLogMsg(line);
-            if (maybeMsg) logger.log(maybeMsg.value());
-            else std::cerr << "Failed to parse RAM telemetry: " << line << "\n";
+            if (maybeMsg)
+                logger.log(maybeMsg.value());
         });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    // The pool destructor will wait for all tasks to finish
-    // Ensure any pending logs are flushed
     logger.flush();
-
     std::cout << "All telemetry data logged concurrently." << std::endl;
+    
+    std::this_thread::sleep_for(std::chrono::seconds(5));
     return 0;
 }

@@ -1,0 +1,38 @@
+{
+    "unicast" : "127.0.0.1",
+    "logging" : {
+        "level" : "info",
+        "console" : "true"
+    },
+    "applications" : [
+        {
+            "name" : "Telemetry_server",
+            "id" : "0x1277"
+        },
+        {
+            "name" : "app", 
+            "id" : "0x1255"
+        }
+    ],
+    "services" : [
+        {
+            "service" : "0x1B1E",
+            "instance" : "0x567A",
+            "unreliable" : "30500",
+            "reliable" : "30499",
+            "events" : [
+                {
+                    "event" : "0x9486",
+                    "groups" : [ "0x1B5E" ]
+                }
+            ]
+        }
+    ],
+    "routing" : "Telemetry_server",
+    "service-discovery" : {
+        "enable" : "true",
+        "multicast" : "224.224.224.245",
+        "port" : "30502",
+        "protocol" : "udp"
+    }
+}
