@@ -127,20 +127,6 @@ Auto-generated per-file docs live under `docs/logging/` and `docs/app/` (these w
 - To observe message buffering behavior, adjust the `LogManager` buffer size (constructed in `DataLogger` as `LogManager logger(150)` by default) and toggle `cfg.logDelayMs` to simulate slower sink writes.
 - If you want `tail -f` behavior for file telemetry, consider modifying `FileTelemetrySrc::readSource` to sleep-and-retry on EOF (follow mode) instead of returning `false`.
 
-## TODOs / Roadmap
-
-1. Add priority submission to the `ThreadPool` (replace queue with `deque` and expose `submit_front`) so GPU events can preempt backlog tasks without a separate pool.
-2. Consolidate to a single prioritized thread pool and remove `gpuPool` usage in `DataLogger`.
-3. Add a `LogManagerBuilder` and a `LogSinkFactory` for nicer configuration API.
-4. Add tests for SOME/IP integration (small test server + client harness).
-5. Add an optional `follow` mode to `FileTelemetrySrc` for long-lived telemetry files.
-
 ## License
 
-This project uses the MIT license. See `LICENSE` if present or add one as needed.
-
----
-
-If you'd like, I can: (A) add a small `docs/README.md` index linking the generated per-file docs, (B) implement ThreadPool priority submission and refactor `DataLogger` to use it, or (C) enable follow/tail for `FileTelemetrySrc` — tell me which and I'll proceed.
-# Logging-System-Cpp
-A Logging system using Cpp + cmake + DP
+This project uses the MIT license.
