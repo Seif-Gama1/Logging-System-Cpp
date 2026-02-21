@@ -11,7 +11,8 @@ class LogManager{
     private:
         std::vector <std::unique_ptr<ILogSink>>  sinks;
         RingBuffer<LogMessage> buffer;
-        std::mutex writeMutex;
+        std::mutex sinksMutex;
+        std::mutex bufferMutex;
 
         void route(const LogMessage& msg);
     public:

@@ -17,6 +17,8 @@ target_include_directories(app PRIVATE
 # their registration static initializers are present at runtime.
 file(GLOB GENERATED_SOURCES "${CMAKE_SOURCE_DIR}/src-gen/v1/omnimetron/gpu/*.cpp")
 target_sources(app PRIVATE ${GENERATED_SOURCES})
+# Add facade implementation
+target_sources(app PRIVATE src/DataLogger.cpp)
 target_link_libraries(app PRIVATE 
     logging
     gpu_generated
